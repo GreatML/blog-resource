@@ -40,8 +40,8 @@ jobs:
       - name: Setup GIT
       # 配置git变量， 不配置将无法commit
         run: |
-          git config --global user.email "blog.zxw7606@github_actions.com"
-          git config --global user.name "blog.zxw7606@bot"
+          git config --global user.email "458294684@qq.com"
+          git config --global user.name "jeffsmish"
       # 这里的PK指的是 hexo生成的public所push的仓库的私钥
       # 有了这仓库的私钥，才能push上去。
       # 这里其实也可以通过前面的 secrets.GH_TOKEN 推送到仓库。 但是经过我测试发现提示错误并且无法提交，因此只能通过原始ssh的方法push,我们知道 github push有3种方式，第一种是通过username和password提交，例如https://{username}:{password}@github.com/{user}/{reposity},目前该方法已被github抛弃。第二种是通过token,例如https://{token}@github.com/{user}/{reposity}，该方法简单直接，但是世纪测试的时候发现并不能push,原因不明。第三种是通过SSH keys,生成key的命令为ssh-keygen -o,将生成的公钥设置到仓库下。然后将私钥配置成环境变量PK。
@@ -62,7 +62,7 @@ jobs:
         run: |
           cd ./public
           git init
-          git remote add "origin" "git@github.com:zxw7606/blog.git"
+          git remote add "origin" "jeffsmish/jeffsmish.github.io"
           git checkout -b master 
           git add .
           git commit -m "Site deployed by GitHub Actions"
