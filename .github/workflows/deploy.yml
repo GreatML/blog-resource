@@ -65,3 +65,10 @@ jobs:
         run: |
           npm run deploy
       
+      # upload build test reports
+      - name: Publish reports
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: jfoa-build-reports-${{ runner.os }}
+          path: runner/build/reports/
