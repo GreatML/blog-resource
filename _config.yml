@@ -1,0 +1,5 @@
+deploy:
+  type: git
+  repo: git@github.com:jeffsmish/jeffsmish.github.io.git
+  # example, https://github.com/hexojs/hexojs.github.io
+  branch: master
