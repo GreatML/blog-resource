@@ -13,58 +13,55 @@ env:
   DEPLOY_REPO: jeffsmish/jeffsmish.github.io
   DEPLOY_BRANCH: master
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   build:
-    # The type of runner that the job will run on
+    name: Build on node ${{ matrix.node_version }} and ${{ matrix.os }}
     runs-on: ubuntu-latest
-    env:
-      TZ: Asia/Shanghai
-    # Steps represent a sequence of tasks that will be executed as part of the job
-    steps:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        node_version: [12.x]
 
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - name: checkout
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Checkout theme repo
         uses: actions/checkout@v2
         with:
-          # 2. 当 submodules 为true时， 初始项目时会递归更新项目下的子模块,但前提是你有权限， 因此下面的就是配置权限 token
-          submodules: true
-          # token具有访问隐藏仓库的权限，这个token是在 https://github.com/settings/tokens 中配置，注意token要配置好读写仓库的权限。注意该Token读写仓库的范围指的是你项Github下所有的仓库，因此要妥善保存。将生成的token放到项目下,页面直达:https://github.com/{your username}/{your reposity}/settings/secrets/actions。点击添加新的 New repository secret。配置完毕后项目所有的Secrets配置都会在secrets变量的上下文中.
-          token: ${{ secrets.GH_TOKEN }}
-          #项目拉取完毕之后需要安装项目所需的环境。这里配置Node12 
-      - name: Setup Node.js
+          repository: ${{ env.THEME_REPO }}
+          ref: ${{ env.THEME_BRANCH }}
+          path: themes/concise
+
+      - name: Checkout deploy repo
+        uses: actions/checkout@v2
+        with:
+          repository: ${{ env.DEPLOY_REPO }}
+          ref: ${{ env.DEPLOY_BRANCH }}
+          path: .deploy_git
+
+      - name: Use Node.js ${{ matrix.node_version }}
         uses: actions/setup-node@v1
         with:
-          node-version: '12.x'
-      - name: Setup GIT
-      # 配置git变量， 不配置将无法commit
+          node-version: ${{ matrix.node_version }}
+
+      - name: Configuration environment
+        env:
+          HEXO_DEPLOY_PRI: ${{secrets.HEXO_DEPLOY_PRI}}
         run: |
-          git config --global user.email "458294684@qq.com"
-          git config --global user.name "jeffsmish"
-      # 这里的PK指的是 hexo生成的public所push的仓库的私钥
-      # 有了这仓库的私钥，才能push上去。
-      # 这里其实也可以通过前面的 secrets.GH_TOKEN 推送到仓库。 但是经过我测试发现提示错误并且无法提交，因此只能通过原始ssh的方法push,我们知道 github push有3种方式，第一种是通过username和password提交，例如https://{username}:{password}@github.com/{user}/{reposity},目前该方法已被github抛弃。第二种是通过token,例如https://{token}@github.com/{user}/{reposity}，该方法简单直接，但是世纪测试的时候发现并不能push,原因不明。第三种是通过SSH keys,生成key的命令为ssh-keygen -o,将生成的公钥设置到仓库下。然后将私钥配置成环境变量PK。
-      - name: CREATE SSH
-        run: |
+          sudo timedatectl set-timezone "Asia/Shanghai"
           mkdir -p ~/.ssh/
-          echo "${{ secrets.PK }}" > ~/.ssh/id_rsa
+          echo "$HEXO_DEPLOY_PRI" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan github.com >> ~/.ssh/known_hosts
-      - name: GENE
+          git config --global user.name $GIT_USER
+          git config --global user.email $GIT_EMAIL
+          cp _config.theme.yml themes/concise/_config.yml
+
+      - name: Install dependencies
         run: |
-          npm install hexo-cli -g
           npm install
-          hexo clean
-          hexo g
-      # 目标仓库为 git@github.com:zxw7606/blog.git
-      - name: DEPLOY_TO_GITHUB_PAGES
+
+      - name: Deploy hexo
         run: |
-          cd ./public
-          git init
-          git remote add "origin" "jeffsmish/jeffsmish.github.io"
-          git checkout -b master 
-          git add .
-          git commit -m "Site deployed by GitHub Actions"
-          git push -u --force origin master:master
-          echo "done."
+          npm run deploy
